@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS - Control Escolar</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .sidebar { background: #2c3e50; min-height: 100vh; }
+        .sidebar a { color: #ecf0f1; text-decoration: none; display: block; padding: 12px 20px; transition: 0.2s; }
+        .sidebar a:hover { background: #34495e; padding-left: 30px; }
+        .sidebar a i { width: 25px; margin-right: 10px; }
+        .content { background: #f8f9fa; min-height: 100vh; }
+        .producto-card { cursor: pointer; transition: 0.1s; }
+        .producto-card:hover { background: #e9ecef; transform: scale(1.01); }
+        .carrito-item { border-bottom: 1px solid #dee2e6; padding: 8px 0; }
+        .total { font-size: 1.5rem; font-weight: bold; }
+        .stock-bajo { border-left: 4px solid #dc3545; }
+        .cambio-grande { font-size: 2rem; font-weight: bold; color: #198754; background: #d1e7dd; padding: 10px; border-radius: 10px; text-align: center; margin-top: 10px; }
+        @media print { .ticket { width: 58mm; margin: 0; font-family: monospace; } }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-2 sidebar p-0">
+            <div class="text-center py-3 bg-dark text-white"><h5><i class="fas fa-school"></i> Escuela</h5></div>
+            <a href="dashboard.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            <a href="alumnos.html"><i class="fas fa-users"></i> Alumnos</a>
+            <a href="grados.html"><i class="fas fa-layer-group"></i> Grados</a>
+            <a href="grupos.html"><i class="fas fa-users-between"></i> Grupos</a>
+            <a href="materias.html"><i class="fas fa-book"></i> Materias</a>
+            <a href="colegiaturas.html"><i class="fas fa-dollar-sign"></i> Colegiaturas</a>
+            <a href="pos.html"><i class="fas fa-shopping-cart"></i> Punto de Venta</a>
+            <a href="productos.html"><i class="fas fa-box"></i> Productos</a>
+            <a href="proveedores.html"><i class="fas fa-truck"></i> Proveedores</a>
+            <a href="movimientos.html"><i class="fas fa-exchange-alt"></i> Movimientos</a>
+            <a href="usuarios.html"><i class="fas fa-user-shield"></i> Usuarios</a>
+            <a href="reportes.html"><i class="fas fa-chart-line"></i> Reportes</a>
+            <a href="cortes.html"><i class="fas fa-cash-register"></i> Corte de Caja</a>
+            <a href="#" id="logoutBtn" class="text-danger"><i class="fas fa-sign-out-alt"></i> Cerrar Sesión</a>
+        </div>
+        <div class="col-md-10 content p-4">
+            <h2><i class="fas fa-shopping-cart"></i> Punto de Venta</h2>
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-primary text-white d-flex justify-content-between">
+                            <span>Productos</span>
+                            <div>
+                                <span id="cajaStatus" class="badge bg-warning text-dark me-2">Verificando...</span>
+                                <button id="abrirCajaBtn" class="btn btn-sm btn-light"><i class="fas fa-cash-register"></i> Abrir Caja</button>
+                                <button id="anularVentaBtn" class="btn btn-sm btn-danger"><i class="fas fa-ban"></i> Anular última venta</button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <input type="text" id="searchProducto" class="form-control mb-3" placeholder="Buscar producto...">
+                            <div id="listaProductos" style="max-height: 500px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header bg-success text-white">Carrito de compras</div>
+                        <div class="card-body">
+                            <ul id="carritoLista" class="list-unstyled"></ul>
+                            <hr>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="total">Total: $<span id="totalCarrito">0</span></span>
+                                <select id="metodoPago" class="form-select w-50">
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="tarjeta">Tarjeta</option>
+                                    <option value="transferencia">Transferencia</option>
+                                </select>
+                            </div>
+                            <div id="pagoEfectivo" style="display: none;">
+                                <label class="mt-2">Monto recibido ($):</label>
+                                <input type="number" id="montoRecibido" class="form-control" placeholder="0.00" step="0.01" value="0">
+                                <div class="cambio-grande" id="cambioDisplay">$0.00</div>
+                            </div>
+                            <button id="btnVender" class="btn btn-success w-100 mt-3">Realizar Venta</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para abrir caja -->
+<div class="modal fade" id="modalAbrirCaja" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white"><h5>Abrir Caja</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <label>Monto de apertura ($):</label>
+                <input type="number" id="montoApertura" class="form-control" step="0.01" value="0">
+            </div>
+            <div class="modal-footer"><button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button id="confirmarAbrir" class="btn btn-primary">Abrir</button></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const API_URL = 'http://localhost:3000/api';
+const token = localStorage.getItem('token');
+if (!token) window.location.href = 'login.html';
+
+let productos = [];
+let carrito = [];
+let cajaAbierta = false;
+
+async function actualizarEstadoCaja() {
+    try {
+        const res = await fetch(`${API_URL}/caja/estado`, { headers: { 'Authorization': `Bearer ${token}` } });
+        const data = await res.json();
+        cajaAbierta = data.abierto;
+        const statusSpan = document.getElementById('cajaStatus');
+        if (cajaAbierta) {
+            statusSpan.className = 'badge bg-success';
+            statusSpan.innerText = 'Caja ABIERTA';
+        } else {
+            statusSpan.className = 'badge bg-danger';
+            statusSpan.innerText = 'Caja CERRADA';
+        }
+    } catch(e) { console.error(e); }
+}
+
+document.getElementById('abrirCajaBtn').onclick = () => { new bootstrap.Modal(document.getElementById('modalAbrirCaja')).show(); };
+document.getElementById('confirmarAbrir').onclick = async () => {
+    const monto = parseFloat(document.getElementById('montoApertura').value);
+    const res = await fetch(`${API_URL}/caja/abrir`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ monto_apertura: monto })
+    });
+    if (res.ok) {
+        alert('Caja abierta');
+        bootstrap.Modal.getInstance(document.getElementById('modalAbrirCaja')).hide();
+        actualizarEstadoCaja();
+    } else alert('Error');
+};
+
+async function cargarProductos() {
+    const res = await fetch(`${API_URL}/productos`, { headers: { 'Authorization': `Bearer ${token}` } });
+    productos = await res.json();
+    mostrarProductos(productos);
+}
+function mostrarProductos(lista) {
+    const div = document.getElementById('listaProductos');
+    div.innerHTML = '';
+    lista.forEach(p => {
+        const stockBajo = p.stock <= p.stock_minimo;
+        div.innerHTML += `
+            <div class="producto-card border rounded p-2 mb-2 d-flex justify-content-between align-items-center ${stockBajo ? 'stock-bajo' : ''}" onclick="agregarAlCarrito(${p.id})">
+                <div><strong>${p.nombre}</strong><br><small>$${p.precio} | Stock: ${p.stock} ${stockBajo ? '<span class="badge bg-danger">Stock bajo</span>' : ''}</small></div>
+                <button class="btn btn-sm btn-primary">Agregar</button>
+            </div>
+        `;
+    });
+}
+window.agregarAlCarrito = (id) => {
+    const prod = productos.find(p => p.id === id);
+    if (!prod) return;
+    const existente = carrito.find(i => i.id === id);
+    if (existente) {
+        if (existente.cantidad + 1 <= prod.stock) existente.cantidad++;
+        else alert('Stock insuficiente');
+    } else {
+        if (1 <= prod.stock) carrito.push({ ...prod, cantidad: 1 });
+        else alert('Stock insuficiente');
+    }
+    actualizarCarrito();
+};
+function actualizarCarrito() {
+    const lista = document.getElementById('carritoLista');
+    lista.innerHTML = '';
+    let total = 0;
+    carrito.forEach((item, idx) => {
+        const subtotal = item.precio * item.cantidad;
+        total += subtotal;
+        lista.innerHTML += `
+            <li class="carrito-item d-flex justify-content-between align-items-center">
+                <div><strong>${item.nombre}</strong> x${item.cantidad}<br><small>$${subtotal.toFixed(2)}</small></div>
+                <button class="btn btn-sm btn-danger" onclick="eliminarDelCarrito(${idx})"><i class="fas fa-trash"></i></button>
+            </li>
+        `;
+    });
+    document.getElementById('totalCarrito').innerText = total.toFixed(2);
+    const metodo = document.getElementById('metodoPago').value;
+    if (total === 0) document.getElementById('pagoEfectivo').style.display = 'none';
+    else document.getElementById('pagoEfectivo').style.display = metodo === 'efectivo' ? 'block' : 'none';
+    calcularCambio();
+}
+window.eliminarDelCarrito = (idx) => { carrito.splice(idx, 1); actualizarCarrito(); };
+function calcularCambio() {
+    const total = parseFloat(document.getElementById('totalCarrito').innerText) || 0;
+    const recibido = parseFloat(document.getElementById('montoRecibido').value) || 0;
+    const cambio = recibido - total;
+    const cambioDiv = document.getElementById('cambioDisplay');
+    if (recibido < total) {
+        cambioDiv.innerHTML = `⚠️ Faltan $${(total - recibido).toFixed(2)}`;
+        cambioDiv.style.color = '#dc3545';
+    } else {
+        cambioDiv.innerHTML = `$${cambio.toFixed(2)}`;
+        cambioDiv.style.color = '#198754';
+    }
+}
+document.getElementById('montoRecibido').addEventListener('input', calcularCambio);
+document.getElementById('metodoPago').addEventListener('change', (e) => {
+    const isEfectivo = e.target.value === 'efectivo';
+    document.getElementById('pagoEfectivo').style.display = isEfectivo ? 'block' : 'none';
+    if (!isEfectivo) document.getElementById('montoRecibido').value = '';
+    else calcularCambio();
+});
+
+document.getElementById('btnVender').onclick = async () => {
+    if (carrito.length === 0) return alert('Carrito vacío');
+    await actualizarEstadoCaja();
+    if (!cajaAbierta) return alert('Caja cerrada. Ábrela primero.');
+    const metodo = document.getElementById('metodoPago').value;
+    const total = carrito.reduce((s,i) => s + i.precio * i.cantidad, 0);
+    if (metodo === 'efectivo') {
+        const recibido = parseFloat(document.getElementById('montoRecibido').value);
+        if (recibido < total) return alert(`Monto insuficiente. Total: $${total}`);
+        const cambio = recibido - total;
+        if (cambio > 0 && !confirm(`Cambio: $${cambio.toFixed(2)}. ¿Continuar?`)) return;
+    }
+    const items = carrito.map(i => ({ producto_id: i.id, cantidad: i.cantidad }));
+    const res = await fetch(`${API_URL}/ventas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ items, metodo_pago: metodo, total })
+    });
+    if (res.ok) {
+        const venta = await res.json();
+        alert('Venta realizada');
+        imprimirTicket(venta.ventaId, carrito, total, metodo);
+        // ✅ Vaciar carrito después de vender
+        carrito = [];
+        actualizarCarrito();
+        cargarProductos(); // recargar stock
+    } else {
+        const err = await res.json();
+        alert('Error al vender: ' + (err.message || 'Error desconocido'));
+    }
+};
+
+function imprimirTicket(ventaId, items, total, metodo) {
+    let contenido = `<div class="ticket"><h3>Escuela</h3><p>Ticket: ${ventaId}</p><p>Fecha: ${new Date().toLocaleString()}</p><hr>`;
+    items.forEach(i => {
+        contenido += `<p>${i.nombre} x${i.cantidad} = $${(i.precio*i.cantidad).toFixed(2)}</p>`;
+    });
+    contenido += `<hr><p>Total: $${total.toFixed(2)}</p><p>Método: ${metodo}</p><p>¡Gracias!</p></div>`;
+    const ventana = window.open();
+    ventana.document.write(`<html><head><style>@media print { .ticket { width: 58mm; margin: 0; font-family: monospace; } }</style></head><body onload="window.print(); window.close();">${contenido}</body></html>`);
+}
+
+document.getElementById('anularVentaBtn').onclick = async () => {
+    if (!confirm('¿Anular la última venta? Se devolverá el stock.')) return;
+    const res = await fetch(`${API_URL}/ventas/ultima`, { headers: { 'Authorization': `Bearer ${token}` } });
+    const venta = await res.json();
+    if (!venta.id) return alert('No hay ventas recientes');
+    const resAnular = await fetch(`${API_URL}/ventas/anular/${venta.id}`, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+    if (resAnular.ok) {
+        alert('Venta anulada');
+        cargarProductos();
+    } else alert('Error');
+};
+
+document.getElementById('searchProducto').addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtrados = productos.filter(p => p.nombre.toLowerCase().includes(term));
+    mostrarProductos(filtrados);
+});
+document.getElementById('logoutBtn').onclick = () => { localStorage.clear(); window.location.href = 'login.html'; };
+actualizarEstadoCaja();
+cargarProductos();
+</script>
+</body>
+</html>

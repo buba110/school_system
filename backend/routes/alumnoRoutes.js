@@ -1,0 +1,1 @@
+const express = require('express'); const { listar, crear, actualizar, eliminar } = require('../controllers/alumnoController'); const auth = require('../middleware/authMiddleware'); const router = express.Router(); router.use(auth); router.get('/', listar); router.post('/', crear); router.put('/:id', actualizar); router.delete('/:id', eliminar); module.exports = router;
