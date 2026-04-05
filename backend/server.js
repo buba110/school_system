@@ -19,6 +19,7 @@ const proveedorRoutes = require('./routes/proveedorRoutes');// <-- NUEVA
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
 app.use(morgan('dev'));
 
 app.use('/api/auth', authRoutes);
