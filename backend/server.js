@@ -34,6 +34,7 @@ app.use('/api/proveedores', proveedorRoutes);
 app.use('/api/inventario', inventarioRoutes);
 app.use('/api/proveedores', proveedorRoutes);// <-- NUEVA
 
+app.use(express.static('public'));
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ message: err.message });
