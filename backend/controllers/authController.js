@@ -12,12 +12,11 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
-    // Verificar si la cuenta está activa y no ha expirado
     if (!user.activo) {
       return res.status(401).json({ message: 'Cuenta desactivada' });
     }
     if (user.fecha_expiracion && new Date(user.fecha_expiracion) < new Date()) {
-      return res.status(401).json({ message: 'Cuenta expirada. Contacte al administrador.' });
+      return res.status(401).json({ message: 'Cuenta expirada' });
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
